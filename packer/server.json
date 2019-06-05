@@ -1,0 +1,46 @@
+{
+    "variables": {
+      "aws_access_key": "",
+      "aws_secret_key": "",
+      "aws_region": "eu-west-2",
+      "ami_name": "ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*",
+      "ami_owner": "099720109477"
+    },
+    "builders": [{
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "region": "{{user `aws_region`}}",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "{{user `ami_name`}}",
+          "root-device-type": "ebs"
+        },
+        "owners": ["{{user `ami_owner`}}"],
+        "most_recent": true
+      },
+      "instance_type": "t2.micro",
+      "ssh_username": "ubuntu",
+      "ami_name": "assetto-server",
+      "iam_instance_profile": "packer-assetto"
+    }],
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline": [
+                "sudo dpkg --add-architecture i386",
+                "wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -",
+                "sudo apt-add-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ xenial main'",
+                "sudo apt-get update -y",
+                "sudo apt-get install -y --install-recommends wine-development python2.7 unzip",
+                "sudo mkdir -p /opt/assetto",
+                "sudo curl -O https://bootstrap.pypa.io/get-pip.py",
+                "sudo python2.7 get-pip.py",
+                "sudo pip install awscli",
+                "sudo aws s3 cp s3://assetto-artifacts/server.zip /opt/assetto/server.zip",
+                "cd /opt/assetto && unzip server.zip"
+            ]
+        }
+    ]
+  }
